@@ -3,6 +3,8 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+etf_style_factors_betaweightedcomposite_csvs/
+
 # C extensions
 *.so
 
