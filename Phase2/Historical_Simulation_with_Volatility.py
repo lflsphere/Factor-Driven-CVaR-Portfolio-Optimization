@@ -5,48 +5,41 @@ import os
 # 1. Setup Paths
 current_dir = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(current_dir, "..", "Phase1", "data", "Adj_Close.csv")
-output_dir = current_dir
 
 if not os.path.exists(file_path):
-    raise FileNotFoundError(f"Data missing at: {os.path.abspath(file_path)}")
+    raise FileNotFoundError(f"Data not found: {file_path}")
 
-# 2. Load Data (Monthly frequency)
+# 2. Data Processing
 df = pd.read_csv(file_path, index_col=0, parse_dates=True)
+returns = np.log(df / df.shift(1)).dropna() # Absolute Log Returns
 
-# 3. Calculate Monthly Log Returns
-monthly_returns = np.log(df / df.shift(1)).dropna()
+# 3. Dual-Window Volatility (Implementation Plan 2.3)
+LONG_WINDOW = 36   # For de-volatilization (3-year)
+SHORT_WINDOW = 12  # For forward-looking rescaling
 
-# 4. Calculate Excess Returns over SPY
-excess_returns = monthly_returns.sub(monthly_returns['SPY'], axis=0)
+long_vol = returns.rolling(window=LONG_WINDOW).std().dropna()
+short_vol = returns.rolling(window=SHORT_WINDOW).std().dropna()
 
-# 5. Compute Rolling Volatility (60-month window)
-window_size = 60 
+# Align indices
+common_idx = long_vol.index.intersection(short_vol.index)
+z_scores = returns.loc[common_idx] / long_vol.loc[common_idx]
 
-if len(excess_returns) < window_size:
-    window_size = len(excess_returns) // 2
-    print(f"Warning: Data too short, adjusting window to {window_size} months.")
+# 4. Generate S x n Scenario Matrix
+current_vol = short_vol.iloc[-1] 
+rescaled_scenarios = z_scores * current_vol
 
-rolling_vol = excess_returns.rolling(window=window_size).std().dropna()
-excess_returns_aligned = excess_returns.loc[rolling_vol.index]
+# 5. Multi-level CVaR Module (Implementation Plan 2.5)
+def get_cvar(series, beta):
+    alpha = 1 - beta
+    return series[series <= series.quantile(alpha)].mean()
 
-# 6. Volatility Normalization (De-volatilization)
-normalized_returns = excess_returns_aligned / rolling_vol
+stats = pd.DataFrame(index=rescaled_scenarios.columns)
+for b in [0.95, 0.975, 0.99]:
+    stats[f'CVaR_{b*100}%'] = rescaled_scenarios.apply(get_cvar, beta=b)
 
-# 7. Re-scale by Current Volatility
-current_vol = rolling_vol.iloc[-1]
-rescaled_scenarios = normalized_returns * current_vol
+# 6. Export Deliverables
+rescaled_scenarios.to_csv(os.path.join(current_dir, "scenario_returns_matrix.csv"))
+stats.to_csv(os.path.join(current_dir, "cvar_forecast_summary.csv"))
 
-# 8. CVaR Calculation (95% Confidence Level)
-def compute_cvar(series, alpha=0.05):
-    var_threshold = series.quantile(alpha)
-    return series[series <= var_threshold].mean()
-
-cvar_results = rescaled_scenarios.apply(compute_cvar)
-
-# 9. Output and Export
-print(f"Calculated CVaR based on {window_size}-month rolling window:")
-print(cvar_results)
-
-output_path = os.path.join(output_dir, "normalized_cvar_results.csv")
-cvar_results.to_csv(output_path)
-print(f"Results saved to: {output_path}")
+print(f"Matrix Shape (S x n): {rescaled_scenarios.shape}")
+print("\nCVaR Estimates:\n", stats.head())
