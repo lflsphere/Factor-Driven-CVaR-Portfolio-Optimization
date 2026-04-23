@@ -37,7 +37,7 @@ Outputs
   Phase4/data/factor_cvar_contributions.csv   (factor-level CVaR contributions)
   Phase4/data/asset_cvar_contributions.csv    (asset-level CVaR contributions)
 
-Owner: Gia (proposed)
+Owner: Hongjie Zhang (proposed)
 =============================================================================
 """
 
