@@ -1,13 +1,10 @@
 # Phase 4 -- Risk Attribution, Backtest, Statistical Inference
 
-## Files
+## Split
 
-| Script | Owner (proposed) | Status |
-| --- | --- | --- |
-| `factor_returns.py` | Rene | Done -- builds long-short Carry / Value / Momentum / Quality factor return series from Phase 1 z-scores |
-| `euler_decomposition.py` | Gia | Stub -- factor-level CVaR contributions via Euler theorem and tail averaging |
-| `backtest.py` | Hongjie | Stub -- rolling-window walk-forward backtest vs 1/N, MV, DRP, Min CVaR, MCC |
-| `coverage_tests.py` | Rene | Stub -- Kupiec / Christoffersen / Acerbi-Szekely + block bootstrap stability |
+- `factor_returns.py` + `backtest.py` -- Rene
+- `euler_decomposition.py` -- Hongjie
+- `coverage_tests.py` -- Gia
 
 ## Outputs
 
@@ -21,3 +18,9 @@ python Phase4/factor_returns.py
 ```
 
 The script depends on `Phase1/data/Log_Returns.csv` and `Phase1/data/factors/{Carry,Value,MOM,Quality}_ZScore.csv`. On a standalone `phase4` branch these will not be present; run after merging or fetch the files from main.
+
+```bash
+python Phase4/backtest.py
+```
+
+Rolling 60-month window, monthly rebalance. Benchmarks: 1/N, min-variance, equal-risk-contribution (DRP proxy), min CVaR LP, min CVaR with 40% position cap. Writes per-date realized returns + ex-ante CVaR to `Phase4/data/backtest_results.csv` and summary table to `Phase4/data/backtest_summary.csv`.
