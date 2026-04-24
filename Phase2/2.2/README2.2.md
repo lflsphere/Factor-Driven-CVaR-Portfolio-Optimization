@@ -1,7 +1,7 @@
 # Phase 2.2 — Monte Carlo Scenario Generator (v1)
 
 Implements §2.2 of the Implementation Plan with a pragmatic v1 simplification:
-fit a multivariate Student-t directly to Sijing's §2.3 de-volatilized return
+fit a multivariate Student-t directly to §2.3 de-volatilized return
 matrix, then simulate 50,000 fresh scenarios. 
 
 ## Files
