@@ -2,9 +2,7 @@
 
 Implements §2.2 of the Implementation Plan with a pragmatic v1 simplification:
 fit a multivariate Student-t directly to Sijing's §2.3 de-volatilized return
-matrix, then simulate 50,000 fresh scenarios. Output uses the same column
-layout as `scenario_returns_matrix.csv` so 2.5 / 3.1 / 4.x consume it with
-zero code changes.
+matrix, then simulate 50,000 fresh scenarios. 
 
 ## Files
 
@@ -20,17 +18,11 @@ zero code changes.
 | `plot2_qq_marginals.png` | Plot 2 (saved by the notebook). |
 | `plot3_cvar_comparison.png` | Plot 3 (saved by the notebook). |
 
-## What v1 does (and doesn't do)
+## What it does 
 
 **Does:** Fit a multivariate Student-t to the §2.3 matrix (S = 204, N = 29).
 Simulate S = 50,000 scenarios from the fitted MVT. Same column layout as the
 input.
-
-**Does not:** Use a factor model (§1.4) or copula (§2.1) — neither is in the
-repo yet. The plan's canonical §2.2 builds factor scenarios through the
-loading matrix B + idiosyncratic noise; this v1 short-circuits that to a
-direct asset-level fit. **Once Islam's Phase 4 factor work lands, v2 is a
-drop-in upgrade** — the input/output contract stays the same.
 
 ## How to run
 
@@ -145,40 +137,6 @@ Equal-weight portfolio:
   d = np.load("scenario_returns_matrix_mc.npz", allow_pickle=True)
   R = d["scenarios"]; cols = d["columns"]
   ```
-
-## Handoff
-
-- **Elif (3.1):** Your LP can now consume `scenario_returns_matrix_mc.csv`
-  for the same input contract — same shape, same columns, just S = 50,000
-  instead of 204. The LP scales linearly in S (50k constraints), should
-  still solve in a few seconds with ECOS / MOSEK.
-- **Beibei (2.5):** `cvar.py` works on the MC matrix unchanged. The
-  fragility warning at β = 0.99 in `demo_cvar.py` will no longer trigger.
-- **Whoever picks up §2.4 (EVT):** the MVT under-fits left tails (Plot 2).
-  Fit a Generalized Pareto to the bottom 10% of the MC losses for the
-  high-β CVaR estimates.
-
-## Known limitations (be honest in the writeup)
-
-1. **MVT is symmetric.** Q-Q plots show the historical left tails for
-   equity-like assets (SPY, GLD, TLT) extend further than the MC. The MC
-   may under-estimate genuinely asymmetric tail risk. Quantitative
-   evidence: MC CVaR at β = 0.99 is 7.78% vs historical 9.53%. Some of
-   that gap is fragility being smoothed away (good); some of it is
-   asymmetry being smoothed away (bad). Two clean fixes:
-   - **Easy:** report `max(MC, historical)` as the headline.
-   - **Proper:** add §2.4 EVT/POT — fit a Generalized Pareto to the MC
-     tail and use the GPD CVaR at high β.
-
-2. **No factor decomposition.** Asset-level fit means we can't
-   attribute portfolio CVaR to factors (Phase 4 §4.1 Euler decomposition)
-   without going back to the factor space. Once §1.4 produces the
-   loading matrix B, swap to v2: simulate factor returns from a copula,
-   map through B, add idio noise.
-
-3. **Stationarity assumption.** We fit one MVT to the full 17-year
-   history. No regime switching. If we need different scenarios for
-   crisis vs calm regimes, that's a v3 extension.
 
 ## Dependencies
 
