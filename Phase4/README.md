@@ -20,13 +20,14 @@ the memo paper (due 5/13).
 
 ## Ownership
 
-| Module                   | Owner   | Status         |
-| ------------------------ | ------- | -------------- |
-| `factor_returns.py`      | Rene    | Done           |
-| `backtest.py`            | Rene    | Done           |
-| `euler_decomposition.py` | Hongjie | Stub           |
-| `coverage_tests.py`      | Gia     | Stub           |
-| `scripts/make_figures.py`| Rene    | Done           |
+| Module                              | Owner               | Status |
+| ----------------------------------- | ------------------- | ------ |
+| `factor_returns.py`                 | Rene                | Done   |
+| `backtest.py`                       | Rene                | Done   |
+| `coverage_tests.py`                 | Gia                 | Stub   |
+| `scripts/euler_decomposition.py`    | Shirley (XueyiLiu11)| Done   |
+| `scripts/visualization.py`          | Shirley (XueyiLiu11)| Done   |
+| `scripts/make_figures.py`           | Rene                | Done   |
 
 ## Algorithms
 
@@ -78,14 +79,26 @@ the memo paper (due 5/13).
   - `data/backtest_summary.csv` — annualised return / vol / Sharpe,
     max drawdown, Calmar, CVaR breach rate, turnover, skew, excess kurtosis.
 
-### 3. `euler_decomposition.py` — CVaR risk attribution *(Hongjie, stub)*
+### 3. `scripts/euler_decomposition.py` — asset-level CVaR risk attribution *(Shirley)*
 
-- **Input** (planned) `backtest_weights.csv` + `Log_Returns.csv`.
-- **Processing** (planned) Scaillet (2002) tail averaging:
-  `MCVaR_i = E[r_i | r_p ≤ -VaR_p]`, then component CVaR
-  `CCVaR_i = w_i · MCVaR_i`. Verifies Euler identity
-  `Σ_i CCVaR_i = CVaR_p`.
-- **Output** (planned) `data/cvar_attribution.csv`.
+- **Input**
+  - `Phase1/data/Log_Returns.csv` — Date × Asset return panel.
+  - `Phase4/data/backtest_weights.csv` — stacked weights from `backtest.py`.
+- **Processing**
+  Per strategy:
+  1. Pivot weights to wide format and shift one period (weights at `t`
+     applied to returns at `t+1`).
+  2. Compute the realised portfolio loss series and its 95% quantile —
+     the empirical VaR threshold.
+  3. Restrict to tail months where loss ≥ VaR threshold.
+  4. Asset-level Euler / Scaillet (2002) component CVaR:
+     `CCVaR_i = -E[w_i · r_i | r_p ≤ -VaR_p]`.
+  5. Normalise into contribution shares summing to 1.
+- **Output**
+  - `data/euler_asset_cvar_contributions_all_strategies.csv` — per-strategy,
+    per-asset CVaR contribution + share + tail diagnostics.
+  - `figures/cvar_contribution_{strategy}_top10.png` — top-10 contributors per strategy.
+  - `figures/cvar_contribution_summary.png` — comparison across strategies.
 
 ### 4. `coverage_tests.py` — statistical coverage of CVaR estimates *(Gia, stub)*
 
@@ -94,33 +107,55 @@ the memo paper (due 5/13).
   Acerbi–Szekely Z2; block bootstrap for finite-sample p-values.
 - **Output** (planned) `data/coverage_tests.csv`.
 
-### 5. `scripts/make_figures.py` — slide / appendix figures
+### 5. `scripts/make_figures.py` — slide / appendix figures *(Rene)*
 
-- **Input** the three CSVs in `data/`.
+- **Input** `data/Factor_Returns.csv`, `data/backtest_results.csv`,
+  `data/backtest_summary.csv`.
 - **Processing** matplotlib renders.
-- **Output** three PNGs in `figures/` (see below).
+- **Output** `figures/cumulative_factor_returns.png`,
+  `figures/strategy_equity_curves.png`,
+  `figures/strategy_summary_metrics.png`.
+
+### 6. `scripts/visualization.py` — cumulative returns + drawdown comparison *(Shirley)*
+
+- **Input** `data/backtest_results.csv`, `data/backtest_summary.csv`.
+- **Processing** Pivots realised returns to wide format, compounds with
+  `(1 + r).cumprod()`, derives drawdowns from the running maximum, and
+  extracts a 4-column subset of the summary table.
+- **Output** `figures/cumulative_returns.png`,
+  `figures/drawdown_comparison.png`,
+  `data/summary_table.csv`.
 
 ## Figures (`figures/`)
 
-| File                              | What it shows                                                                                              |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `cumulative_factor_returns.png`   | Cumulative log returns of the four long-short style factors (239 months).                                  |
-| `strategy_equity_curves.png`      | Walk-forward growth of $1 per strategy across 205 OOS months, log scale.                                   |
-| `strategy_summary_metrics.png`    | Per-strategy bars: annualised Sharpe, max drawdown, and CVaR breach rate vs the 5% nominal β = 0.95 line.  |
+| File                                         | What it shows                                                                                              |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `cumulative_factor_returns.png`              | Cumulative log returns of the four long-short style factors (239 months).                                  |
+| `strategy_equity_curves.png`                 | Walk-forward growth of $1 per strategy across 205 OOS months, log scale.                                   |
+| `strategy_summary_metrics.png`               | Per-strategy bars: annualised Sharpe, max drawdown, and CVaR breach rate vs the 5% nominal β = 0.95 line.  |
+| `cumulative_returns.png`                     | Per-strategy `(1+r).cumprod()` curves (linear scale).                                                      |
+| `drawdown_comparison.png`                    | Per-strategy drawdown lines vs the running maximum.                                                        |
+| `cvar_contribution_{strategy}_top10.png`     | Top-10 asset contributors to portfolio CVaR per strategy.                                                  |
+| `cvar_contribution_summary.png`              | Top contributors compared across all five strategies.                                                      |
 
 ## Reproducing
 
 ```bash
 # from repo root, with Phase 1 outputs available (i.e. on merged main)
-python Phase4/factor_returns.py        # -> data/Factor_Returns.csv
-python Phase4/backtest.py              # -> data/backtest_{results,weights,summary}.csv
-python Phase4/scripts/make_figures.py  # -> figures/*.png
+python Phase4/factor_returns.py                # -> data/Factor_Returns.csv
+python Phase4/backtest.py                      # -> data/backtest_{results,weights,summary}.csv
+python Phase4/scripts/make_figures.py          # -> figures/{cumulative_factor_returns,strategy_*}.png
+python Phase4/scripts/visualization.py         # -> figures/{cumulative_returns,drawdown_comparison}.png + data/summary_table.csv
+python Phase4/scripts/euler_decomposition.py   # -> data/euler_asset_cvar_contributions_all_strategies.csv + figures/cvar_contribution_*.png
 ```
 
 The `factor_returns.py` and `backtest.py` scripts depend on
 `Phase1/data/Log_Returns.csv` and `Phase1/data/factors/*.csv`; on a
 standalone `phase4` branch these are not present, so run after merging
-or fetch the files from `main`.
+or fetch the files from `main`. The two visualization scripts and the
+Euler decomposition consume only files inside `Phase4/data/` (plus
+`Phase1/data/Log_Returns.csv` for Euler), so they re-run cleanly from
+any clone.
 
 ## Configuration (set at top of `backtest.py`)
 
