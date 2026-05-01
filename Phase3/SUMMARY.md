@@ -1,0 +1,13 @@
+# Mean-CVaR Portfolio Optimization: Executive Summary
+
+## Overview
+
+We implemented and validated a Mean-CVaR portfolio optimization framework that balances risk minimization (via Conditional Value-at-Risk) with return maximization. The optimization problem is formulated as a linear program: minimize α + 1/((1-β)S) Σ uₖ - λ·(μᵀw), subject to standard portfolio constraints, where λ controls the tradeoff between risk and return. We solved this using the SCS solver (open-source, no license required) and validated the implementation against analytical solutions for Gaussian portfolios. The framework was then applied to real market data consisting of 204 monthly return scenarios across 29 ETFs spanning from April 2009 to March 2026.
+
+## Validation Against Analytical Solutions
+
+To validate our LP solver implementation, we tested it against a two-asset Gaussian portfolio with known analytical solutions. Using 200,000 Monte Carlo scenarios, we compared the LP optimization results with analytical CVaR calculations across six different mean-weight parameters (λ = 0.0, 0.1, 0.3, 0.5, 0.7, 1.0). The validation was highly successful: across all tested values of λ, the LP solution matched the analytical solution with weight errors below 0.4% (L2 norm < 0.0034) and CVaR errors below 0.01% (absolute difference < 0.000011). This confirms that our sample-based LP approach converges to the true optimal solution for Gaussian portfolios, providing strong evidence for the correctness of our implementation and its applicability to general return distributions.
+
+## Real Market Data Results
+
+Applying the validated framework to real market data revealed clear risk-return tradeoffs as the mean-weight parameter λ increased. At λ=0.0 (pure CVaR minimization), the optimal portfolio allocated 97.25% to SHY (short-term treasuries) with a CVaR of 0.007680 and expected return of 0.001323. As λ increased to 1.0 (maximum emphasis on returns), the SHY allocation decreased to 93.80%, CVaR increased modestly to 0.007794 (+1.5%), while expected return increased significantly to 0.001552 (+17.3%). This demonstrates that the Mean-CVaR framework successfully captures the efficient frontier, allowing investors to systematically trade off tail risk against expected returns. The relatively small increase in CVaR for substantial gains in expected return suggests that pure CVaR minimization may be overly conservative for risk-tolerant investors, and that incorporating mean returns (λ > 0) can improve portfolio efficiency.

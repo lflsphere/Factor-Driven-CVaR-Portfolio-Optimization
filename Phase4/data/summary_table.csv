@@ -1,0 +1,6 @@
+Strategy,Ann_Return,Ann_Vol,Sharpe,Max_Drawdown
+EqualWeight,0.1098,0.1206,0.9101,-0.1962
+MinVar,0.0175,0.0139,1.2583,-0.0513
+DRP,0.0427,0.0434,0.9838,-0.1087
+MinCVaR,0.0183,0.0157,1.1645,-0.0529
+MinCVaR_Cap,0.0285,0.0334,0.8535,-0.1122
