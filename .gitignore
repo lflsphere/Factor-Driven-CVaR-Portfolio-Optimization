@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 etf_style_factors_betaweightedcomposite_csvs/
-
+.DS_Store
 # C extensions
 *.so
 
