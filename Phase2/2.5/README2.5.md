@@ -2,7 +2,7 @@
 
 Implements the CVaR computation module described in §2.5 of the Implementation
 Plan. Provides three methods for computing Conditional Value-at-Risk and a
-cross-validation suite that confirms they agree.
+cross-validation suite that confirms they agree. This part completed by Beibei Xian
 
 ## Files
 
