@@ -2,7 +2,7 @@
 
 Implements §2.2 of the Implementation Plan with a pragmatic simplification:
 fit a multivariate Student-t directly to §2.3 de-volatilized return
-matrix, then simulate 50,000 fresh scenarios. 
+matrix, then simulate 50,000 fresh scenarios. This Part completed by Beibei Xian.
 
 ## Files
 
